@@ -18,6 +18,12 @@ package com.example;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -33,19 +39,27 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Map;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 @SpringBootApplication
 public class Main {
 
   @Value("${spring.datasource.url}")
+  
   private String dbUrl;
 
   @Autowired
   private DataSource dataSource;
+ private static final String USER_AGENT = "Mozilla/5.0";
+    private static final String GET_URL = "https://api.openweathermap.org/data/2.5/weather?q=Bogota&appid=80c9ba49cb19fed4e056de5cf6710290";
 
   public static void main(String[] args) throws Exception {
     SpringApplication.run(Main.class, args);
+        
+    
+    
+    
   }
 
   @RequestMapping("/")
@@ -53,6 +67,43 @@ public class Main {
     return "index";
   }
 
+    @RequestMapping("/{ciudad}")
+  String respuesta(@PathVariable String ciudad) throws MalformedURLException, IOException {
+      String llave="&appid=80c9ba49cb19fed4e056de5cf6710290";
+      //String ciudad="Bogota";
+      String url="https://api.openweathermap.org/data/2.5/weather?q=";
+      String resp="";
+      //vamos
+        //URL obj = new URL(url+"Bogota"+llave);
+        URL obj = new URL(url+ciudad+llave);
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+        con.setRequestMethod("GET");
+        con.setRequestProperty("User-Agent", USER_AGENT);
+        
+        //The following invocation perform the connection implicitly before getting the code
+        int responseCode = con.getResponseCode();
+        System.out.println("GET Response Code :: " + responseCode);
+        
+        if (responseCode == HttpURLConnection.HTTP_OK) { // success
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                    con.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+
+            // print result
+            System.out.println(response.toString());
+            resp=response.toString();
+        }
+        return resp;
+  }
+  
+  
+  
   @RequestMapping("/db")
   String db(Map<String, Object> model) {
     try (Connection connection = dataSource.getConnection()) {
